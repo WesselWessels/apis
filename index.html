@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spelling apis</title>
+  <style type="text/css">
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      height: 100vh;
+      background-color: #DDDDDD;
+      margin: 0;
+    }
+
+    #currentWord {
+      min-height: 60px;
+      height: 60px;
+      font-size: 48px;
+      display: flex;
+      justify-content: center;
+      color: #111111;
+    }
+
+    #history {
+      display: flex;
+      flex-direction: column-reverse;
+    }
+
+    .entry-holder {
+      display: flex;
+      justify-content: center;
+    }
+
+    .word {
+      font-size: 24px;
+      
+    }
+    .word--correct {
+      padding-right: 8px;
+      color: #2ECC40;
+    }
+    .word--wrong {
+      color: #FF4136;
+    }
+
+    #heading {
+      position: fixed;
+      bottom: 0px;
+      width: 100%;
+      height: 48px;
+      background-color: #FFDC00;
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #game-holder {
+      height: 100vh;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-content: center;
+    }
+  </style>
+  <script type="text/javascript">
+    var allWords;
+    var wasWrong = false;
+    fetch('words.json').then(r => {
+      r.json().then(words => {
+        allWords = words;
+      });
+    });
+    var voices = speechSynthesis.getVoices();
+    function speakWord(word) {
+      voices = speechSynthesis.getVoices().filter(value => {
+        return value.lang.indexOf('en') >= 0 && value.localService == true;
+      });
+      var utterance = new SpeechSynthesisUtterance(word);
+      utterance.voice = voices[Math.floor(Math.random() * voices.length)];
+      speechSynthesis.speak(utterance);
+    }
+    var currentWord = null;
+    var currentTyped = "";
+
+    function getRandomWord() {
+      var word = allWords[Math.floor(Math.random() * allWords.length)];
+      currentWord = word;
+    }
+
+    function showCurrentTyped() {
+      var currentTypedDiv = document.getElementById('currentWord');
+      currentTypedDiv.innerText = currentTyped;
+    }
+    
+    function addToHistory() {
+      var isSame = currentWord == currentTyped;
+      var historyHolder = document.getElementById('history');
+      var newEntryHolder = document.createElement('div');
+      newEntryHolder.classList.add('entry-holder');
+      var correctWordDiv = document.createElement('div');
+      correctWordDiv.innerText = currentWord;
+      correctWordDiv.classList.add('word', 'word--correct');
+      newEntryHolder.appendChild(correctWordDiv);
+
+      if(!isSame) {
+        var wrongWordDiv = document.createElement('div');
+        wrongWordDiv.classList.add('word', 'word--wrong');
+        wrongWordDiv.innerText = currentTyped;
+        newEntryHolder.appendChild(wrongWordDiv);
+      }
+      historyHolder.appendChild(newEntryHolder);
+    }
+
+    function checkWords() {
+      var isSame = currentWord == currentTyped;
+      if(currentTyped == "") {
+        speakWord("At least try");
+      }
+        addToHistory();
+      if(isSame) {
+        getRandomWord();
+        currentTyped = "";
+        showCurrentTyped();
+        speakWord(currentWord);
+      } else {
+        getRandomWord();
+        currentTyped = "";
+        showCurrentTyped();
+        var phrases = ['nope...', 'oh no...', 'wrong...', 'that\'s not right...', 'incorrect...']
+        speakWord(phrases[Math.floor(Math.random() * phrases.length)] + ' ' + currentWord);
+      }
+    }
+    document.addEventListener('keydown', function(event) {
+      if(event.code == "Space") {
+        event.preventDefault();
+
+        if(currentWord === null) {
+          getRandomWord();
+        }
+        speakWord(currentWord);
+        
+      } else if(event.key.length == 1) {
+        currentTyped += event.key;
+        currentTyped = currentTyped.toLowerCase();
+        showCurrentTyped();
+      } else if (event.key == 'Backspace') {
+        currentTyped = currentTyped.substring(0, currentTyped.length - 1);
+        showCurrentTyped();
+      } else if (event.key == 'Enter') {
+        event.preventDefault();
+        checkWords();
+      }
+    })
+  </script>
+</head>
+<body>
+  <div id="heading">
+    <div id="heading-instructions">
+      Spacebar = "Speak", Enter = "Check". Desktop only.
+    </div>
+  </div>
+  <div id="game-holder">
+    
+    <div id="currentWord"></div>
+    <div id="history"></div>
+  </div>
+  
+</body>
+</html>
