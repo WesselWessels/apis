@@ -129,11 +129,13 @@
       }
         addToHistory();
       if(isSame) {
+        ga('send', 'event', 'Game', 'word', 'correct');
         getRandomWord();
         currentTyped = "";
         showCurrentTyped();
         speakWord(currentWord);
       } else {
+        ga('send', 'event', 'Game', 'word', 'wrong');
         getRandomWord();
         currentTyped = "";
         showCurrentTyped();
